@@ -1387,8 +1387,40 @@ export function renderUI(): string {
         alert('No endpoint URL configured for this provider');
         return;
       }
-      alert('Probe functionality coming soon!\\n\\nEndpoint: ' + endpointUrl);
-      // TODO: Call POST /crm/:id/verify when implemented
+
+      // Update button to show loading
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = 'Probing...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/crm/' + providerId + '/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          alert('Probe successful!\\n\\n' +
+            'Protocol: x402 ' + result.probe.version + '\\n' +
+            'Token: ' + (result.probe.tokenType || 'unknown') + '\\n' +
+            'Amount: ' + (result.probe.amount || 'N/A') + ' sats\\n' +
+            'Recipient: ' + (result.probe.payTo || 'N/A'));
+        } else {
+          alert('Probe failed:\\n\\n' + (result.probe?.error || result.error || 'Unknown error'));
+        }
+
+        // Refresh the modal to show updated verification status
+        viewLead(providerId);
+        loadData(); // Refresh the list too
+      } catch (e) {
+        alert('Probe failed: ' + e.message);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
     }
 
     function editProvider(providerId) {

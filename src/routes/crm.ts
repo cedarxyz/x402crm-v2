@@ -400,6 +400,90 @@ crmRoutes.put('/:provider_id', async (c) => {
 });
 
 /**
+ * POST /:provider_id/verify - Probe endpoint and record verification result
+ *
+ * This is a "dry-run" verification - it probes the endpoint to check if it
+ * returns 402 and parses the payment requirements. It does NOT send payment.
+ * Use sbtc-appleseed for full payment verification.
+ */
+crmRoutes.post('/:provider_id/verify', async (c) => {
+  const db = c.env.DB;
+  const providerId = c.req.param('provider_id');
+
+  // Get provider
+  const provider = await db
+    .prepare('SELECT * FROM providers WHERE provider_id = ?')
+    .bind(providerId)
+    .first<ProviderRow>();
+
+  if (!provider) {
+    return c.json({ error: 'Provider not found' }, 404);
+  }
+
+  const endpointUrl = provider.endpoint_url;
+  if (!endpointUrl) {
+    return c.json({ error: 'Provider has no endpoint URL configured' }, 400);
+  }
+
+  // Probe the endpoint
+  const probeResult = await probeEndpoint(endpointUrl);
+
+  // Record in verification_history
+  await db
+    .prepare(
+      `INSERT INTO verification_history (
+        provider_id, status, tx_id, amount_sats, error, endpoint_tested
+      ) VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      providerId,
+      probeResult.success ? 'passed' : 'failed',
+      null, // No tx for probe-only
+      probeResult.amount ? parseInt(probeResult.amount, 10) : null,
+      probeResult.error || null,
+      endpointUrl
+    )
+    .run();
+
+  // Update provider verification status
+  const updates = [
+    'verification_status = ?',
+    'verification_timestamp = ?',
+  ];
+  const values: (string | number)[] = [
+    probeResult.success ? 'passed' : 'failed',
+    new Date().toISOString(),
+  ];
+
+  // If probe found sBTC/Stacks, mark as supports_sbtc
+  if (probeResult.success && probeResult.hasStacks) {
+    updates.push('supports_sbtc = 1');
+  }
+
+  // Append note
+  const note = probeResult.success
+    ? `Probe ${new Date().toLocaleDateString()}: PASSED - ${probeResult.version} endpoint, accepts ${probeResult.tokenType || 'STX'}`
+    : `Probe ${new Date().toLocaleDateString()}: FAILED - ${probeResult.error}`;
+
+  updates.push('notes = CASE WHEN notes IS NULL THEN ? ELSE notes || ? END');
+  values.push(note, '\n' + note);
+
+  values.push(providerId);
+
+  await db
+    .prepare(`UPDATE providers SET ${updates.join(', ')} WHERE provider_id = ?`)
+    .bind(...values)
+    .run();
+
+  return c.json({
+    success: probeResult.success,
+    provider_id: providerId,
+    endpoint: endpointUrl,
+    probe: probeResult,
+  });
+});
+
+/**
  * DELETE /:provider_id - Delete provider
  */
 crmRoutes.delete('/:provider_id', async (c) => {
@@ -447,4 +531,127 @@ function extractDomain(url?: string): string | null {
     const match = url.match(/^([a-zA-Z0-9.-]+)/);
     return match?.[1] ?? null;
   }
+}
+
+// Probe result type
+interface ProbeResult {
+  success: boolean;
+  version: 'v1' | 'v2' | null;
+  httpStatus: number;
+  error?: string;
+  amount?: string;
+  payTo?: string;
+  tokenType?: string;
+  hasStacks: boolean;
+  raw?: unknown;
+}
+
+const STACKS_NETWORK_PREFIXES = ['stacks:1', 'stacks:2147483648'];
+const SBTC_IDENTIFIERS = ['sbtc', 'token-sbtc', 'SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9'];
+
+/**
+ * Probe an x402 endpoint to check if it returns 402 and parse payment requirements.
+ * This is a simplified version of the sbtc-appleseed probe.
+ */
+async function probeEndpoint(url: string): Promise<ProbeResult> {
+  // Ensure URL has protocol
+  const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+
+  let res: Response;
+  try {
+    res = await fetch(fullUrl, {
+      method: 'GET',
+      headers: { 'User-Agent': 'x402crm-v2/1.0' },
+    });
+  } catch (err) {
+    return {
+      success: false,
+      version: null,
+      httpStatus: 0,
+      hasStacks: false,
+      error: `Failed to reach endpoint: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  if (res.status !== 402) {
+    return {
+      success: false,
+      version: null,
+      httpStatus: res.status,
+      hasStacks: false,
+      error: `Expected HTTP 402, got ${res.status}`,
+    };
+  }
+
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    return {
+      success: false,
+      version: null,
+      httpStatus: 402,
+      hasStacks: false,
+      error: '402 response body is not valid JSON',
+    };
+  }
+
+  // Detect v1 vs v2
+  if (typeof body === 'object' && body !== null) {
+    const obj = body as Record<string, unknown>;
+
+    // v2: has x402Version or accepts array
+    if (obj.x402Version === 2 || Array.isArray(obj.accepts)) {
+      const accepts = (obj.accepts as Array<Record<string, unknown>>) || [];
+      const stacksOption = accepts.find((a) =>
+        STACKS_NETWORK_PREFIXES.some((p) => String(a.network || '').startsWith(p.split(':')[0] ?? ''))
+      );
+      const sbtcOption = accepts.find((a) =>
+        SBTC_IDENTIFIERS.some((id) =>
+          String(a.asset || '').toLowerCase().includes(id) ||
+          String((a.extra as Record<string, unknown>)?.tokenType || '').toLowerCase().includes('sbtc')
+        )
+      );
+
+      return {
+        success: true,
+        version: 'v2',
+        httpStatus: 402,
+        hasStacks: !!stacksOption,
+        amount: String(stacksOption?.amount || sbtcOption?.amount || ''),
+        payTo: String(stacksOption?.payTo || sbtcOption?.payTo || ''),
+        tokenType: sbtcOption ? 'sBTC' : (stacksOption ? 'STX' : 'unknown'),
+        raw: body,
+      };
+    }
+
+    // v1: has maxAmountRequired, payTo, etc.
+    if (obj.maxAmountRequired !== undefined || obj.payTo !== undefined) {
+      // Check for nested payment object (some v1 variants)
+      const payment = (obj.payment as Record<string, unknown>) || obj;
+      const tokenType = String(payment.tokenType || payment.token || 'STX');
+      const hasStacks = tokenType === 'STX' || tokenType === 'sBTC' || tokenType === 'USDCx' ||
+        String(obj.network || '').includes('mainnet') || String(obj.network || '').includes('testnet');
+
+      return {
+        success: true,
+        version: 'v1',
+        httpStatus: 402,
+        hasStacks,
+        amount: String(payment.maxAmountRequired || payment.price || ''),
+        payTo: String(payment.payTo || payment.recipient || ''),
+        tokenType,
+        raw: body,
+      };
+    }
+  }
+
+  return {
+    success: false,
+    version: null,
+    httpStatus: 402,
+    hasStacks: false,
+    error: 'Could not parse 402 response as x402 protocol',
+    raw: body,
+  };
 }

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: x402 Protocol Documentation
+    url: https://github.com/coinbase/x402
+    about: Learn about the x402 payment protocol
+  - name: sBTC Integration Guide
+    url: https://github.com/aibtcdev/x402-crosschain-example
+    about: Examples for integrating sBTC with x402

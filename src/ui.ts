@@ -628,6 +628,239 @@ export function renderUI(): string {
       color: var(--text-dim);
     }
 
+    /* Detail Modal */
+    .modal-wide {
+      width: 700px;
+      max-width: 95vw;
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .detail-title {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .detail-company {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .detail-badges {
+      display: flex;
+      gap: 8px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .detail-field {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .detail-field-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .detail-field-value {
+      font-size: 14px;
+      word-break: break-all;
+    }
+
+    .detail-field-value a {
+      color: var(--orange);
+      text-decoration: none;
+    }
+
+    .detail-field-value a:hover {
+      text-decoration: underline;
+    }
+
+    .detail-section {
+      margin-top: 24px;
+    }
+
+    .detail-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-notes {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 16px;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.6;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* Verification Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 24px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-bottom: 16px;
+    }
+
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -20px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+    }
+
+    .timeline-dot.passed {
+      background: var(--green);
+    }
+
+    .timeline-dot.failed {
+      background: var(--red);
+    }
+
+    .timeline-dot.pending {
+      background: var(--orange);
+    }
+
+    .timeline-content {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .timeline-status {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .timeline-status.passed { color: var(--green); }
+    .timeline-status.failed { color: var(--red); }
+
+    .timeline-time {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .timeline-details {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .timeline-tx {
+      margin-top: 8px;
+    }
+
+    .timeline-tx a {
+      font-size: 12px;
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    .timeline-tx a:hover {
+      text-decoration: underline;
+    }
+
+    .timeline-empty {
+      color: var(--text-dim);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    /* Action buttons in modal */
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    .verification-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .verification-badge.passed {
+      background: rgba(0, 210, 106, 0.2);
+      color: var(--green);
+    }
+
+    .verification-badge.failed {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--red);
+    }
+
+    .verification-badge.pending {
+      background: var(--orange-glow);
+      color: var(--orange);
+    }
+
     /* Responsive */
     @media (max-width: 1200px) {
       .pipeline {
@@ -799,6 +1032,19 @@ export function renderUI(): string {
     </main>
   </div>
 
+  <!-- Provider Detail Modal -->
+  <div class="modal-overlay" id="detailModalOverlay" onclick="closeDetailModal(event)">
+    <div class="modal modal-wide" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Provider Details</h2>
+        <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="detailModalBody">
+        <div class="loading">Loading...</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Lead Modal -->
   <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
     <div class="modal" onclick="event.stopPropagation()">
@@ -932,10 +1178,15 @@ export function renderUI(): string {
     function createLeadCard(lead) {
       const div = document.createElement('div');
       div.className = 'lead-card' + (lead.supports_sbtc ? ' sbtc-verified' : '');
+      div.onclick = () => viewLead(lead.provider_id);
       const chainClass = 'chain-' + (lead.chain || 'unknown').toLowerCase();
+      const verificationIcon = lead.verification_status === 'passed' ? '<span style="color:var(--green);">&#10003;</span>'
+        : lead.verification_status === 'failed' ? '<span style="color:var(--red);">&#10007;</span>'
+        : '';
       div.innerHTML = \`
         <div class="lead-name">
           \${lead.name || 'Unknown'}
+          \${verificationIcon}
           \${lead.supports_sbtc ? '<span class="sbtc-badge">sBTC</span>' : ''}
         </div>
         <div class="lead-company">\${lead.company || '-'}</div>
@@ -1001,9 +1252,166 @@ export function renderUI(): string {
       filterLeads();
     }
 
-    function viewLead(providerId) {
-      // TODO: Open detail modal
-      console.log('View lead:', providerId);
+    async function viewLead(providerId) {
+      // Open modal with loading state
+      document.getElementById('detailModalOverlay').classList.add('active');
+      document.getElementById('detailModalBody').innerHTML = '<div class="loading">Loading...</div>';
+
+      try {
+        // Fetch provider details and history in parallel
+        const [providerRes, historyRes] = await Promise.all([
+          fetch('/crm/' + providerId),
+          fetch('/crm/' + providerId + '/history')
+        ]);
+
+        const provider = await providerRes.json();
+        const historyData = await historyRes.json();
+
+        renderDetailModal(provider, historyData.history || []);
+      } catch (e) {
+        document.getElementById('detailModalBody').innerHTML =
+          '<div class="loading" style="color: var(--red);">Failed to load provider details</div>';
+        console.error('Failed to load provider:', e);
+      }
+    }
+
+    function renderDetailModal(provider, history) {
+      const s = provider.synced_data || {};
+      const verificationBadge = provider.verification_status
+        ? \`<span class="verification-badge \${provider.verification_status}">\${provider.verification_status === 'passed' ? '&#10003;' : '&#10007;'} \${provider.verification_status}</span>\`
+        : '';
+      const sbtcBadge = provider.supports_sbtc
+        ? '<span class="sbtc-badge">sBTC</span>'
+        : '';
+
+      const html = \`
+        <div class="detail-header">
+          <div>
+            <div class="detail-title">\${s.name || provider.provider_id}</div>
+            <div class="detail-company">\${s.company || '-'}</div>
+          </div>
+          <div class="detail-badges">
+            \${verificationBadge}
+            \${sbtcBadge}
+            <span class="status-badge status-\${provider.pipeline_status}">\${provider.pipeline_status}</span>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-field">
+            <div class="detail-field-label">Email</div>
+            <div class="detail-field-value">\${s.email ? \`<a href="mailto:\${s.email}">\${s.email}</a>\` : '-'}</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Twitter</div>
+            <div class="detail-field-value">\${s.twitter ? \`<a href="https://twitter.com/\${s.twitter.replace('@', '')}" target="_blank">\${s.twitter}</a>\` : '-'}</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Chain</div>
+            <div class="detail-field-value">\${s.chain || '-'}</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Est. MRR</div>
+            <div class="detail-field-value">$\${(s.estimated_mrr || 0).toLocaleString()}</div>
+          </div>
+          <div class="detail-field" style="grid-column: span 2;">
+            <div class="detail-field-label">Endpoint URL</div>
+            <div class="detail-field-value">\${s.endpoint_url ? \`<a href="https://\${s.endpoint_url}" target="_blank">\${s.endpoint_url}</a>\` : '-'}</div>
+          </div>
+          \${provider.issue_url ? \`
+          <div class="detail-field" style="grid-column: span 2;">
+            <div class="detail-field-label">GitHub Issue</div>
+            <div class="detail-field-value"><a href="\${provider.issue_url}" target="_blank">\${provider.issue_url}</a></div>
+          </div>
+          \` : ''}
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Notes</div>
+          <div class="detail-notes">\${provider.notes || 'No notes yet.'}</div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Verification History</div>
+          \${history.length > 0 ? renderTimeline(history) : '<div class="timeline-empty">No verification attempts yet.</div>'}
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="editProvider('\${provider.provider_id}')">Edit</button>
+          <button class="btn btn-primary" onclick="probeProvider('\${provider.provider_id}', '\${s.endpoint_url || ''}')">Probe Endpoint</button>
+          <button class="btn btn-danger" style="margin-left: auto;" onclick="deleteProvider('\${provider.provider_id}')">Delete</button>
+        </div>
+      \`;
+
+      document.getElementById('detailModalBody').innerHTML = html;
+    }
+
+    function renderTimeline(history) {
+      return '<div class="timeline">' + history.map(item => \`
+        <div class="timeline-item">
+          <div class="timeline-dot \${item.status}"></div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-status \${item.status}">\${item.status}</span>
+              <span class="timeline-time">\${formatTimestamp(item.timestamp)}</span>
+            </div>
+            <div class="timeline-details">
+              \${item.status === 'passed'
+                ? \`Verified: \${item.amount_sats || 0} sats sent\`
+                : \`Error: \${item.error || 'Unknown error'}\`}
+            </div>
+            \${item.tx_id ? \`
+            <div class="timeline-tx">
+              <a href="https://explorer.hiro.so/txid/\${item.tx_id}" target="_blank">View Transaction &#8599;</a>
+            </div>
+            \` : ''}
+          </div>
+        </div>
+      \`).join('') + '</div>';
+    }
+
+    function formatTimestamp(ts) {
+      if (!ts) return '-';
+      const d = new Date(ts);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+    function closeDetailModal(e) {
+      if (!e || e.target === document.getElementById('detailModalOverlay')) {
+        document.getElementById('detailModalOverlay').classList.remove('active');
+      }
+    }
+
+    async function probeProvider(providerId, endpointUrl) {
+      if (!endpointUrl) {
+        alert('No endpoint URL configured for this provider');
+        return;
+      }
+      alert('Probe functionality coming soon!\\n\\nEndpoint: ' + endpointUrl);
+      // TODO: Call POST /crm/:id/verify when implemented
+    }
+
+    function editProvider(providerId) {
+      alert('Edit functionality coming soon!');
+      // TODO: Open edit modal
+    }
+
+    async function deleteProvider(providerId) {
+      if (!confirm('Are you sure you want to delete this provider? This cannot be undone.')) {
+        return;
+      }
+      try {
+        const res = await fetch('/crm/' + providerId, { method: 'DELETE' });
+        if (res.ok) {
+          closeDetailModal();
+          loadData();
+        } else {
+          const err = await res.json();
+          alert('Failed to delete: ' + (err.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Failed to delete: ' + e.message);
+      }
     }
 
     function openModal() {

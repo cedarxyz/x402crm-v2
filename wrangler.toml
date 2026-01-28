@@ -1,9 +1,33 @@
-name = "x402-crm"
-main = "worker.js"
-compatibility_date = "2024-01-01"
+name = "x402crm-v2"
+main = "src/index.ts"
+compatibility_date = "2024-09-25"
+
+# Development - uses local D1
+[env.development]
 workers_dev = true
 
+# Staging - separate D1 database for testing
+[env.staging]
+name = "x402crm-v2-staging"
+workers_dev = true
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "x402crm-v2-staging"
+database_id = "8701927c-680b-49e5-af68-f51e82e3a1ea"
+
+# Production - will replace v1 eventually
+[env.production]
+name = "x402crm-api"
+workers_dev = false
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "x402crm-v2"
+database_id = "placeholder-production"
+
+# Default D1 binding for local dev
 [[d1_databases]]
 binding = "DB"
-database_name = "x402-crm"
-database_id = "placeholder"
+database_name = "x402crm-v2-local"
+database_id = "local"
